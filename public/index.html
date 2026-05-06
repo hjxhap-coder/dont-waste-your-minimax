@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMax AI 创作工坊</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #111111;
+            --canvas: #ffffff;
+            --soft-cloud: #f5f5f5;
+            --hairline: #cacacb;
+            --hairline-soft: #e5e5e5;
+            --mute: #707072;
+            --stone: #9e9ea0;
+            --charcoal: #39393b;
+            --rounded-full: 30px;
+            --rounded-md: 24px;
+            --rounded-sm: 18px;
+            --section: 48px;
+            --sm: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--canvas);
+            color: var(--ink);
+            line-height: 1.5;
+            font-size: 16px;
+        }
+        /* Header */
+        .header {
+            height: 60px;
+            background: var(--canvas);
+            border-bottom: 1px solid var(--hairline-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        /* Main */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        /* Left Content */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--section);
+            background: var(--canvas);
+        }
+        /* Right Sidebar - Chat */
+        .sidebar {
+            width: 380px;
+            min-width: 320px;
+            border-left: 1px solid var(--hairline-soft);
+            display: flex;
+            flex-direction: column;
+            background: var(--soft-cloud);
+        }
+        .sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--hairline-soft);
+            background: var(--canvas);
+        }
+        .sidebar-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--mute);
+            margin-top: 2px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+        .chat-message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-message.user { flex-direction: row-reverse; }
+        .chat-message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--rounded-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .chat-message.user .chat-message-avatar { background: var(--ink); color: var(--canvas); }
+        .chat-message.assistant .chat-message-avatar { background: var(--hairline); color: var(--ink); }
+        .chat-message-content {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: var(--rounded-md);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .chat-message.user .chat-message-content { background: var(--ink); color: var(--canvas); }
+        .chat-message.assistant .chat-message-content { background: var(--canvas); color: var(--ink); white-space: pre-wrap; }
+        .chat-empty {
+            text-align: center;
+            color: var(--stone);
+            padding: 48px 20px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .chat-input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--hairline-soft);
+            background: var(--canvas);
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input-area textarea {
+            flex: 1;
+            min-height: 44px;
+            max-height: 100px;
+            resize: vertical;
+            padding: 10px 14px;
+            border: 1px solid var(--hairline);
+            border-radius: var(--rounded-md);
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--soft-cloud);
+            color: var(--ink);
+        }
+        .chat-input-area textarea:focus { outline: none; border-color: var(--ink); }
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: var(--canvas);
+            border: 1px solid var(--hairline);
+            border-radius: var(--rounded-full);
+            color: var(--charcoal);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .tab.active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
+        .tab:hover:not(.active) { border-color: var(--ink); color: var(--ink); }
+        /* Panel */
+        .panel {
+            background: var(--canvas);
+            border: 1px solid var(--hairline);
+            border-radius: 0;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .panel.hidden { display: none; }
+        .panel h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--charcoal);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--hairline);
+            border-radius: var(--rounded-md);
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--soft-cloud);
+            color: var(--ink);
+            transition: border-color 0.15s;
+        }
+        .form-group textarea { min-height: 90px; resize: vertical; }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { outline: none; border-color: var(--ink); background: var(--canvas); }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--mute);
+            margin: 20px 0 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--hairline-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Buttons */
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: var(--rounded-full);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--ink); color: var(--canvas); }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-primary:disabled { background: var(--hairline); color: var(--stone); cursor: not-allowed; }
+        .btn-secondary { background: var(--soft-cloud); color: var(--ink); border: 1px solid var(--hairline); }
+        /* Range */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--hairline);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--ink);
+            border-radius: var(--rounded-full);
+            cursor: pointer;
+        }
+        .param-value {
+            display: inline-block;
+            color: var(--ink);
+            font-weight: 600;
+            min-width: 28px;
+        }
+        /* Result */
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--soft-cloud);
+            border-radius: var(--rounded-sm);
+        }
+        .result-box img { max-width: 100%; border-radius: 6px; margin-top: 12px; }
+        .result-box audio { width: 100%; margin-top: 12px; height: 36px; }
+        .result-box pre {
+            background: var(--canvas);
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+        .loading { text-align: center; padding: 28px; }
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid var(--hairline);
+            border-top-color: var(--ink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error {
+            color: #d30005;
+            padding: 10px 14px;
+            background: rgba(211, 0, 5, 0.06);
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+        /* History */
+        .history-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--hairline-soft);
+        }
+        .history-section h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--mute);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .history-list { display: grid; gap: 8px; }
+        .history-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .history-filter input, .history-filter select {
+            padding: 6px 10px;
+            border: 1px solid var(--hairline);
+            border-radius: var(--rounded-sm);
+            font-size: 12px;
+            background: var(--soft-cloud);
+            color: var(--ink);
+            font-family: inherit;
+        }
+        .history-filter input:focus, .history-filter select:focus {
+            outline: none;
+            border-color: var(--ink);
+        }
+        .history-filter input[type="date"] { width: 130px; }
+        .history-filter button { padding: 6px 12px; font-size: 12px; }
+        .history-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--hairline-soft);
+        }
+        .history-pagination span {
+            font-size: 12px;
+            color: var(--mute);
+        }
+        .history-pagination button {
+            padding: 6px 12px;
+            background: var(--ink);
+            color: var(--canvas);
+            border: none;
+            border-radius: var(--rounded-full);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .history-pagination button:disabled {
+            background: var(--hairline);
+            color: var(--stone);
+            cursor: not-allowed;
+        }
+        .history-item {
+            background: var(--soft-cloud);
+            border-radius: var(--rounded-sm);
+            padding: 12px 14px;
+            border: 1px solid var(--hairline-soft);
+        }
+        .history-item:hover { border-color: var(--hairline); }
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .history-item-time { font-size: 10px; color: var(--stone); }
+        .history-item-prompt {
+            font-size: 12px;
+            color: var(--charcoal);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .history-item-preview { margin-top: 8px; }
+        .history-item-preview audio { width: 100%; max-width: 180px; height: 28px; }
+        .history-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+        .history-btn {
+            padding: 5px 10px;
+            background: var(--ink);
+            color: var(--canvas);
+            border: none;
+            border-radius: var(--rounded-full);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .history-btn:hover { opacity: 0.8; }
+        .history-preview-img { max-width: 80px; border-radius: 4px; cursor: pointer; }
+        .empty-history { text-align: center; padding: 16px; color: var(--stone); font-size: 12px; }
+        /* Image Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .image-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; cursor: pointer; }
+        /* Image Preview Modal */
+        .img-preview-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            cursor: pointer;
+        }
+        .img-preview-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        /* Audio player fix */
+        audio { pointer-events: auto; }
+        /* Quota */
+        .quota-info {
+            background: var(--soft-cloud);
+            padding: 10px 14px;
+            border-radius: var(--rounded-sm);
+            margin-bottom: 18px;
+            font-size: 12px;
+            color: var(--charcoal);
+        }
+        .quota-info strong { color: var(--ink); }
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--stone);
+            font-size: 11px;
+            border-top: 1px solid var(--hairline-soft);
+            margin-top: 24px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--ink);
+            color: var(--canvas);
+            border-radius: var(--rounded-full);
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 主界面 -->
+    <div id="mainContainer">
+        <header class="header"><h1>MiniMax AI 创作工坊</h1></header>
+        <div class="main-container">
+            <!-- 左侧生成区 -->
+            <main class="content-area">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('tts')">语音合成</button>
+                    <button class="tab" onclick="switchTab('image')">图片生成</button>
+                    <button class="tab" onclick="switchTab('music')">音乐生成</button>
+                    <button class="tab" onclick="switchTab('lyric')">歌词生成</button>
+                </div>
+
+                <!-- TTS -->
+                <div class="panel" id="panel-tts">
+                    <h2>语音合成</h2>
+                    <div class="quota-info"><span class="badge">额度</span>Plus月度套餐可用 <strong>1500次</strong> 模型调用 / <strong>5小时</strong></div>
+                    <div class="form-group">
+                        <label>输入文本</label>
+                        <textarea id="ttsText" placeholder="输入要转换的文本，支持停顿标签 <#秒数#> 和语气词 (breath) (laughs) 等"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>选择音色</label>
+                            <select id="ttsVoice">
+                                <option value="Chinese_playful_streamer_vv1">活泼主播风格</option>
+                                <option value="male-qn-jingying">精英青年</option>
+                                <option value="male-qn-qingse">青涩青年</option>
+                                <option value="female-yujie">御姐</option>
+                                <option value="female-shaonv">少女</option>
+                                <option value="audiobook_male_1">有声书男声</option>
+                                <option value="audiobook_female_1">有声书女声</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>模型</label>
+                            <select id="ttsModel">
+                                <option value="speech-2.8-hd">speech-2.8-hd</option>
+                                <option value="speech-2.8-turbo">speech-2.8-turbo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="section-title">语速与音调</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>语速 <span class="param-value" id="speedVal">1.2</span></label>
+                            <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1.2" />
+                        </div>
+                        <div class="form-group">
+                            <label>音调 <span class="param-value" id="pitchVal">0</span></label>
+                            <input type="range" id="ttsPitch" min="-12" max="12" step="0.5" value="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>音量 <span class="param-value" id="volVal">1.0</span></label>
+                            <input type="range" id="ttsVol" min="0" max="2" step="0.1" value="1" />
+                        </div>
+                    </div>
+                    <div class="section-title">音频设置</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>采样率</label>
+                            <select id="ttsSampleRate">
+                                <option value="16000">16000 Hz</option>
+                                <option value="24000">24000 Hz</option>
+                                <option value="32000" selected>32000 Hz</option>
+                                <option value="48000">48000 Hz</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>比特率</label>
+                            <select id="ttsBitrate">
+                                <option value="64000">64 kbps</option>
+                                <option value="128000" selected>128 kbps</option>
+                                <option value="192000">192 kbps</option>
+                                <option value="320000">320 kbps</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateTTS()">生成语音</button>
+                    <div id="ttsResult"></div>
+                    <div class="history-section">
+                        <h3>历史记录</h3>
+                        <div class="history-filter">
+                            <input type="date" id="ttsStartDate" />
+                            <span style="font-size:12px;color:var(--mute)">至</span>
+                            <input type="date" id="ttsEndDate" />
+                            <button class="btn btn-secondary" onclick="loadHistoryByType('tts', 'ttsHistoryList')">筛选</button>
+                            <button class="btn btn-secondary" onclick="clearHistoryFilter('tts')">清除</button>
+                        </div>
+                        <div class="history-list" id="ttsHistoryList"></div>
+                        <div class="history-pagination" id="ttsPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Image -->
+                <div class="panel hidden" id="panel-image">
+                    <h2>图片生成</h2>
+                    <div class="quota-info"><span class="badge">额度</span>Plus月度套餐可用 <strong>1500次</strong> 模型调用 / <strong>5小时</strong></div>
+                    <div class="form-group">
+                        <label>图片描述 / Prompt</label>
+                        <textarea id="imagePrompt" placeholder="描述你想要生成的图片"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>图片尺寸</label>
+                            <select id="imageSize">
+                                <option value="1:1">1:1 (1024x1024)</option>
+                                <option value="16:9" selected>16:9 (1280x720)</option>
+                                <option value="9:16">9:16 (720x1280)</option>
+                                <option value="3:4">3:4 (768x1024)</option>
+                                <option value="4:3">4:3 (1024x768)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>图片数量</label>
+                            <select id="imageCount">
+                                <option value="1">1 张</option>
+                                <option value="2">2 张</option>
+                                <option value="4">4 张</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>画面类型</label>
+                            <select id="imageStyle">
+                                <option value="">自动</option>
+                                <option value="photographic">摄影风格</option>
+                                <option value="illustration">插画风格</option>
+                                <option value="anime">动漫风格</option>
+                                <option value="oilpainting">油画风格</option>
+                                <option value="watercolor">水彩风格</option>
+                                <option value="digital_art">数字艺术</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>光照风格</label>
+                            <select id="imageLight">
+                                <option value="">自动</option>
+                                <option value="natural">自然光</option>
+                                <option value="studio">工作室灯光</option>
+                                <option value="golden">黄金时段</option>
+                                <option value="neon">霓虹灯光</option>
+                                <option value="dramatic">戏剧性光线</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>负面提示词 (可选)</label>
+                        <input type="text" id="imageNegativePrompt" placeholder="不想出现的元素" />
+                    </div>
+                    <button class="btn btn-primary" onclick="generateImage()">生成图片</button>
+                    <div id="imageResult"></div>
+                    <div class="history-section">
+                        <h3>历史记录</h3>
+                        <div class="history-filter">
+                            <input type="date" id="imageStartDate" />
+                            <span style="font-size:12px;color:var(--mute)">至</span>
+                            <input type="date" id="imageEndDate" />
+                            <button class="btn btn-secondary" onclick="loadHistoryByType('image', 'imageHistoryList')">筛选</button>
+                            <button class="btn btn-secondary" onclick="clearHistoryFilter('image')">清除</button>
+                        </div>
+                        <div class="history-list" id="imageHistoryList"></div>
+                        <div class="history-pagination" id="imagePagination"></div>
+                    </div>
+                </div>
+
+                <!-- Music -->
+                <div class="panel hidden" id="panel-music">
+                    <h2>音乐生成</h2>
+                    <div class="quota-info"><span class="badge">额度</span>Plus月度套餐可用 <strong>1500次</strong> 模型调用 / <strong>5小时</strong></div>
+                    <div class="form-group">
+                        <label>音乐描述 / Prompt</label>
+                        <textarea id="musicPrompt" placeholder="描述你想要的音乐"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>模型</label>
+                            <select id="musicModel">
+                                <option value="music-2.6">music-2.6 (推荐)</option>
+                                <option value="music-2.6-free">music-2.6-free</option>
+                                <option value="music-2.5+">music-2.5+</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>情绪</label>
+                            <select id="musicMood">
+                                <option value="">自动检测</option>
+                                <option value="happy">快乐</option>
+                                <option value="sad">悲伤</option>
+                                <option value="energetic">充满活力</option>
+                                <option value="calm">平静</option>
+                                <option value="romantic">浪漫</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>歌词（可选）</label>
+                        <textarea id="musicLyrics" placeholder="输入自定义歌词，使用 [Verse] [Chorus] [Bridge] 等标签"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="musicLyricsOptimizer" /> 自动生成歌词</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="musicInstrumental" /> 无伴奏纯音乐</label>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateMusic()">生成音乐</button>
+                    <div id="musicResult"></div>
+                    <div class="history-section">
+                        <h3>历史记录</h3>
+                        <div class="history-filter">
+                            <input type="date" id="musicStartDate" />
+                            <span style="font-size:12px;color:var(--mute)">至</span>
+                            <input type="date" id="musicEndDate" />
+                            <button class="btn btn-secondary" onclick="loadHistoryByType('music', 'musicHistoryList')">筛选</button>
+                            <button class="btn btn-secondary" onclick="clearHistoryFilter('music')">清除</button>
+                        </div>
+                        <div class="history-list" id="musicHistoryList"></div>
+                        <div class="history-pagination" id="musicPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Lyric -->
+                <div class="panel hidden" id="panel-lyric">
+                    <h2>歌词生成</h2>
+                    <div class="quota-info"><span class="badge">额度</span>Plus月度套餐可用 <strong>1500次</strong> 模型调用 / <strong>5小时</strong></div>
+                    <div class="form-group">
+                        <label>歌曲风格描述</label>
+                        <textarea id="lyricStyle" placeholder="描述歌词风格"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>歌词主题</label>
+                            <input type="text" id="lyricTheme" placeholder="歌词主题" />
+                        </div>
+                        <div class="form-group">
+                            <label>歌词类型</label>
+                            <select id="lyricType">
+                                <option value="">自动检测</option>
+                                <option value="verse-chorus">主歌副歌结构</option>
+                                <option value="free">自由格式</option>
+                                <option value="narrative">叙事风格</option>
+                                <option value="love">爱情歌曲</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>歌词长度</label>
+                        <select id="lyricLength">
+                            <option value="short">短 (2-3段)</option>
+                            <option value="medium" selected>中等 (4-5段)</option>
+                            <option value="long">长 (6段以上)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateLyric()">生成歌词</button>
+                    <div id="lyricResult"></div>
+                    <div class="history-section">
+                        <h3>历史记录</h3>
+                        <div class="history-filter">
+                            <input type="date" id="lyricStartDate" />
+                            <span style="font-size:12px;color:var(--mute)">至</span>
+                            <input type="date" id="lyricEndDate" />
+                            <button class="btn btn-secondary" onclick="loadHistoryByType('lyric', 'lyricHistoryList')">筛选</button>
+                            <button class="btn btn-secondary" onclick="clearHistoryFilter('lyric')">清除</button>
+                        </div>
+                        <div class="history-list" id="lyricHistoryList"></div>
+                        <div class="history-pagination" id="lyricPagination"></div>
+                    </div>
+                </div>
+
+                <div class="footer"><p>Powered by MiniMax API</p></div>
+            </main>
+
+            <!-- 右侧对话助手 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>对话助手</h2>
+                    <p>讨论提示词写作方法</p>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-empty">输入你的问题，我会帮你优化提示词～<br/><br/>例如："帮我写一个咖啡厅图片的prompt"</div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chatInput" placeholder="输入问题，按 Enter 发送"></textarea>
+                    <button class="btn btn-primary" onclick="sendChatMessage()">发送</button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+            event.target.classList.add('active');
+            document.getElementById('panel-' + tabName).classList.remove('hidden');
+        }
+
+        // 页面加载时自动加载历史记录
+        window.addEventListener('DOMContentLoaded', function() {
+            loadAllHistory();
+        });
+
+        document.getElementById('ttsSpeed').addEventListener('input', function() { document.getElementById('speedVal').textContent = this.value; });
+        document.getElementById('ttsPitch').addEventListener('input', function() { document.getElementById('pitchVal').textContent = this.value; });
+        document.getElementById('ttsVol').addEventListener('input', function() { document.getElementById('volVal').textContent = this.value; });
+
+        async function generateTTS() {
+            const text = document.getElementById('ttsText').value.trim();
+            if (!text) { alert('请输入文本'); return; }
+            const btn = event.target;
+            const resultDiv = document.getElementById('ttsResult');
+            btn.disabled = true; btn.textContent = '生成中...';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成...</p></div>';
+            try {
+                const response = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        voice_id: document.getElementById('ttsVoice').value,
+                        model: document.getElementById('ttsModel').value,
+                        speed: parseFloat(document.getElementById('ttsSpeed').value),
+                        pitch: parseFloat(document.getElementById('ttsPitch').value),
+                        vol: parseFloat(document.getElementById('ttsVol').value),
+                        sample_rate: parseInt(document.getElementById('ttsSampleRate').value),
+                        bitrate: parseInt(document.getElementById('ttsBitrate').value),
+                        channel: 1
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="result-box"><p>语音生成成功</p><audio controls src="' + data.audioUrl + '"></audio></div>';
+                    loadHistoryByType('tts', 'ttsHistoryList');
+                } else { throw new Error(data.error || '生成失败'); }
+            } catch (error) { resultDiv.innerHTML = '<div class="error">' + error.message + '</div>'; }
+            finally { btn.disabled = false; btn.textContent = '生成语音'; }
+        }
+
+        async function generateImage() {
+            const prompt = document.getElementById('imagePrompt').value.trim();
+            if (!prompt) { alert('请输入图片描述'); return; }
+            const btn = event.target;
+            const resultDiv = document.getElementById('imageResult');
+            btn.disabled = true; btn.textContent = '生成中...';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成...</p></div>';
+            try {
+                var styleVal = document.getElementById('imageStyle').value;
+                var requestBody = {
+                    prompt: prompt,
+                    size: document.getElementById('imageSize').value,
+                    num: parseInt(document.getElementById('imageCount').value),
+                    negative_prompt: document.getElementById('imageNegativePrompt').value
+                };
+                if (styleVal) requestBody.style = styleVal;
+                const response = await fetch('/api/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    let html = '<div class="result-box"><p>图片生成成功</p><div class="image-grid">';
+                    data.images.forEach(function(imgUrl) {
+                        html += '<img src="' + imgUrl + '" onclick="showImgPreview(\'' + imgUrl + '\')" />';
+                    });
+                    html += '</div></div>';
+                    resultDiv.innerHTML = html;
+                    loadHistoryByType('image', 'imageHistoryList');
+                } else { throw new Error(data.error || '生成失败'); }
+            } catch (error) { resultDiv.innerHTML = '<div class="error">' + error.message + '</div>'; }
+            finally { btn.disabled = false; btn.textContent = '生成图片'; }
+        }
+
+        async function generateMusic() {
+            const prompt = document.getElementById('musicPrompt').value.trim();
+            if (!prompt) { alert('请输入音乐描述'); return; }
+            const btn = event.target;
+            const resultDiv = document.getElementById('musicResult');
+            btn.disabled = true; btn.textContent = '生成中...';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成（可能需要几分钟）...</p></div>';
+            try {
+                const response = await fetch('/api/music', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: document.getElementById('musicModel').value,
+                        prompt: prompt,
+                        lyrics: document.getElementById('musicLyrics').value.trim() || null,
+                        lyrics_optimizer: document.getElementById('musicLyricsOptimizer').checked,
+                        instrumental: document.getElementById('musicInstrumental').checked,
+                        mood: document.getElementById('musicMood').value || null
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    let html = '<div class="result-box"><p>音乐生成成功</p>';
+                    if (data.musicUrl) { html += '<audio controls src="' + data.musicUrl + '"></audio>'; }
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                    loadHistoryByType('music', 'musicHistoryList');
+                } else { throw new Error(data.error || '生成失败'); }
+            } catch (error) { resultDiv.innerHTML = '<div class="error">' + error.message + '</div>'; }
+            finally { btn.disabled = false; btn.textContent = '生成音乐'; }
+        }
+
+        async function generateLyric() {
+            const style = document.getElementById('lyricStyle').value.trim();
+            const theme = document.getElementById('lyricTheme').value.trim();
+            if (!style && !theme) { alert('请输入风格或主题'); return; }
+            const btn = event.target;
+            const resultDiv = document.getElementById('lyricResult');
+            btn.disabled = true; btn.textContent = '生成中...';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成...</p></div>';
+            try {
+                const response = await fetch('/api/lyric', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        style: style, theme: theme,
+                        type: document.getElementById('lyricType').value,
+                        length: document.getElementById('lyricLength').value
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="result-box"><p>歌词生成成功</p><pre>' + escapeHtml(data.lyric) + '</pre></div>';
+                    loadHistoryByType('lyric', 'lyricHistoryList');
+                } else { throw new Error(data.error || '生成失败'); }
+            } catch (error) { resultDiv.innerHTML = '<div class="error">' + error.message + '</div>'; }
+            finally { btn.disabled = false; btn.textContent = '生成歌词'; }
+        }
+
+        // History pagination state
+        var historyState = {
+            tts: { page: 1, total: 0, limit: 5 },
+            image: { page: 1, total: 0, limit: 5 },
+            music: { page: 1, total: 0, limit: 5 },
+            lyric: { page: 1, total: 0, limit: 5 }
+        };
+
+        function loadAllHistory() {
+            loadHistoryByType('tts', 'ttsHistoryList');
+            loadHistoryByType('image', 'imageHistoryList');
+            loadHistoryByType('music', 'musicHistoryList');
+            loadHistoryByType('lyric', 'lyricHistoryList');
+        }
+
+        function loadHistoryByType(type, containerId) {
+            var state = historyState[type];
+            var limit = state.limit;
+            var offset = (state.page - 1) * limit;
+            var startDate = document.getElementById(type + 'StartDate').value || null;
+            var endDate = document.getElementById(type + 'EndDate').value || null;
+
+            var url = '/api/records?type=' + type + '&limit=' + limit + '&offset=' + offset;
+            if (startDate) url += '&startDate=' + startDate;
+            if (endDate) url += '&endDate=' + endDate;
+
+            fetch(url)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        state.total = data.total || 0;
+                        displayHistory(data.records, containerId, type);
+                        renderPagination(type);
+                    }
+                })
+                .catch(function(error) { console.error('加载历史失败:', error); });
+        }
+
+        function clearHistoryFilter(type) {
+            document.getElementById(type + 'StartDate').value = '';
+            document.getElementById(type + 'EndDate').value = '';
+            historyState[type].page = 1;
+            loadHistoryByType(type, type + 'HistoryList');
+        }
+
+        function renderPagination(type) {
+            var state = historyState[type];
+            var total = state.total;
+            var limit = state.limit;
+            var totalPages = Math.ceil(total / limit);
+            var currentPage = state.page;
+
+            var paginationDiv = document.getElementById(type + 'Pagination');
+            if (!paginationDiv || total <= limit) {
+                if (paginationDiv) paginationDiv.innerHTML = '';
+                return;
+            }
+
+            var start = (currentPage - 1) * limit + 1;
+            var end = Math.min(currentPage * limit, total);
+
+            var html = '<span>第 ' + start + '-' + end + ' 条，共 ' + total + ' 条</span>';
+            html += '<div style="display:flex;gap:6px;">';
+            html += '<button ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="prevPage(\'' + type + '\')">上一页</button>';
+            html += '<button ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="nextPage(\'' + type + '\')">下一页</button>';
+            html += '</div>';
+            paginationDiv.innerHTML = html;
+        }
+
+        function prevPage(type) {
+            if (historyState[type].page > 1) {
+                historyState[type].page--;
+                loadHistoryByType(type, type + 'HistoryList');
+            }
+        }
+
+        function nextPage(type) {
+            var state = historyState[type];
+            var totalPages = Math.ceil(state.total / state.limit);
+            if (state.page < totalPages) {
+                state.page++;
+                loadHistoryByType(type, type + 'HistoryList');
+            }
+        }
+
+        function displayHistory(records, containerId, type) {
+            var container = document.getElementById(containerId);
+            if (!records || records.length === 0) {
+                container.innerHTML = '<div class="empty-history">暂无历史记录</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < records.length; i++) {
+                var record = records[i];
+                var date = new Date(record.created_at).toLocaleString('zh-CN');
+                var promptText = record.prompt ? escapeHtml(record.prompt) : '(无提示词)';
+                html += '<div class="history-item" data-id="' + record.id + '" data-type="' + type + '">' +
+                    '<div class="history-item-header"><span></span><span class="history-item-time">' + date + '</span></div>' +
+                    '<div class="history-item-prompt">' + promptText + '</div>';
+                if (record.result_path) {
+                    if (type === 'image') {
+                        html += '<div class="history-item-preview">';
+                        html += '<img class="history-preview-img" src="' + record.result_path + '" data-src="' + record.result_path + '" />';
+                        html += '<div class="history-btn-row">';
+                        html += '<button class="history-btn" onclick="copyPrompt(' + record.id + ')">复制</button>';
+                        html += '<button class="history-btn" onclick="viewImg(\'' + record.result_path + '\')">查看</button>';
+                        html += '<button class="history-btn" onclick="downloadImg(\'' + record.result_path + '\')">下载</button>';
+                        html += '<button class="history-btn" onclick="deleteRecord(' + record.id + ', \'' + type + '\')">删除</button>';
+                        html += '</div></div>';
+                    } else if (type === 'music') {
+                        html += '<div class="history-item-preview">';
+                        html += '<audio controls src="' + record.result_path + '"></audio>';
+                        html += '<div class="history-btn-row">';
+                        html += '<button class="history-btn" onclick="copyPrompt(' + record.id + ')">复制</button>';
+                        html += '<button class="history-btn" onclick="downloadMusic(\'' + record.result_path + '\')">下载</button>';
+                        html += '<button class="history-btn" onclick="deleteRecord(' + record.id + ', \'' + type + '\')">删除</button>';
+                        html += '</div></div>';
+                    } else if (type === 'tts') {
+                        html += '<div class="history-item-preview">';
+                        html += '<audio controls src="' + record.result_path + '"></audio>';
+                        html += '<div class="history-btn-row">';
+                        html += '<button class="history-btn" onclick="copyPrompt(' + record.id + ')">复制</button>';
+                        html += '<button class="history-btn" onclick="downloadMusic(\'' + record.result_path + '\')">下载</button>';
+                        html += '<button class="history-btn" onclick="deleteRecord(' + record.id + ', \'' + type + '\')">删除</button>';
+                        html += '</div></div>';
+                    } else if (type === 'lyric') {
+                        html += '<div class="history-btn-row">';
+                        html += '<button class="history-btn" onclick="copyPrompt(' + record.id + ')">复制</button>';
+                        html += '<button class="history-btn" onclick="viewLyric(' + record.id + ')">查看</button>';
+                        html += '<button class="history-btn" onclick="deleteRecord(' + record.id + ', \'' + type + '\')">删除</button>';
+                        html += '</div>';
+                    }
+                } else {
+                    html += '<div class="history-btn-row">';
+                    html += '<button class="history-btn" onclick="copyPrompt(' + record.id + ')">复制</button>';
+                    html += '<button class="history-btn" onclick="deleteRecord(' + record.id + ', \'' + type + '\')">删除</button>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+            var imgs = container.querySelectorAll('.history-preview-img');
+            for (var k = 0; k < imgs.length; k++) {
+                imgs[k].addEventListener('click', function() {
+                    showImgPreview(this.getAttribute('data-src'));
+                });
+            }
+        }
+
+        function deleteRecord(id, type) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+            fetch('/api/records/' + id, { method: 'DELETE' })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        loadHistoryByType(type, type + 'HistoryList');
+                    } else {
+                        alert('删除失败');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('删除失败:', error);
+                    alert('删除失败');
+                });
+        }
+
+        function showImgPreview(src) {
+            var modal = document.createElement('div');
+            modal.className = 'img-preview-modal';
+            modal.innerHTML = '<img src="' + src + '" />';
+            modal.addEventListener('click', function() { modal.remove(); });
+            document.body.appendChild(modal);
+        }
+
+        function useHistoryRecord(id, type) {
+            fetch('/api/records/' + id)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success && data.record) {
+                        var prompt = data.record.prompt || '';
+                        if (type === 'tts') { document.getElementById('ttsText').value = prompt; switchTab('tts'); }
+                        else if (type === 'image') { document.getElementById('imagePrompt').value = prompt; switchTab('image'); }
+                        else if (type === 'music') { document.getElementById('musicPrompt').value = prompt; switchTab('music'); }
+                        else if (type === 'lyric') { document.getElementById('lyricStyle').value = prompt; switchTab('lyric'); }
+                    }
+                })
+                .catch(function(error) { console.error('加载记录失败:', error); });
+        }
+
+        function copyPrompt(id) {
+            fetch('/api/records/' + id)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success && data.record && data.record.prompt) {
+                        navigator.clipboard.writeText(data.record.prompt).then(function() {
+                            alert('提示词已复制');
+                        });
+                    }
+                });
+        }
+
+        function viewImg(path) {
+            showImgPreview(path);
+        }
+
+        function downloadImg(path) {
+            var a = document.createElement('a');
+            a.href = path;
+            a.download = path.split('/').pop();
+            a.click();
+        }
+
+        function downloadMusic(path) {
+            var a = document.createElement('a');
+            a.href = path;
+            a.download = path.split('/').pop();
+            a.click();
+        }
+
+        function viewLyric(id) {
+            fetch('/api/records/' + id)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success && data.record) {
+                        var modal = document.createElement('div');
+                        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;justify-content:center;align-items:center;z-index:2000;cursor:pointer;';
+                        modal.innerHTML = '<pre style="color:#fff;padding:32px;max-width:600px;max-height:80%;overflow:auto;background:#222;border-radius:8px;font-size:14px;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(data.record.prompt || '无歌词内容') + '</pre>';
+                        modal.addEventListener('click', function() { modal.remove(); });
+                        document.body.appendChild(modal);
+                    }
+                });
+        }
+
+        // Chat
+        var chatMessages = [];
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+        });
+
+        function sendChatMessage() {
+            var input = document.getElementById('chatInput');
+            var message = input.value.trim();
+            if (!message) return;
+            chatMessages.push({ role: 'user', content: message });
+            renderChatMessages();
+            input.value = '';
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: chatMessages })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) { chatMessages.push({ role: 'assistant', content: data.reply }); }
+                else { chatMessages.push({ role: 'assistant', content: '抱歉发生错误' }); }
+                renderChatMessages();
+            })
+            .catch(function(error) {
+                chatMessages.push({ role: 'assistant', content: '网络错误' });
+                renderChatMessages();
+            });
+        }
+
+        function renderChatMessages() {
+            var container = document.getElementById('chatMessages');
+            if (chatMessages.length === 0) {
+                container.innerHTML = '<div class="chat-empty">输入你的问题，我会帮你优化提示词～<br/><br/>例如："帮我写一个咖啡厅图片的prompt"</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < chatMessages.length; i++) {
+                var msg = chatMessages[i];
+                var avatar = msg.role === 'user' ? '我' : 'AI';
+                html += '<div class="chat-message ' + msg.role + '">' +
+                    '<div class="chat-message-avatar">' + avatar + '</div>' +
+                    '<div class="chat-message-content">' + escapeHtml(msg.content) + '</div></div>';
+            }
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

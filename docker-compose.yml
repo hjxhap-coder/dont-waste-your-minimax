@@ -1,0 +1,16 @@
+services:
+  minimax-studio:
+    build: .
+    container_name: minimax-studio
+    ports:
+      - "3000:3000"
+    environment:
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
+      - MINIMAX_API_HOST=${MINIMAX_API_HOST:-api.minimaxi.com}
+      - PASSWORD=${PASSWORD:-hjx123456}
+      - PORT=3000
+    volumes:
+      - ./data:/app/data
+      - ./public/audio:/app/public/audio
+      - ./public/images:/app/public/images
+    restart: unless-stopped

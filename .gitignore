@@ -1,0 +1,7 @@
+node_modules/
+data/
+public/audio/
+public/images/
+*.db
+.env
+.DS_Store
